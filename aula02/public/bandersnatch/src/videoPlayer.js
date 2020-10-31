@@ -1,7 +1,9 @@
 class VideoMediaPlayer {
-  constructor({ manifestJSON, network }) {
+  constructor({ manifestJSON, network, videoComponent }) {
     this.manifestJSON = manifestJSON;
     this.network = network;
+    this.videoComponent = videoComponent;
+
     this.videoElement = null;
     this.sourceBuffer = null;
     this.selected = {};
@@ -9,6 +11,7 @@ class VideoMediaPlayer {
   }
 
   initializeCodec() {
+    console.log('aqui');
     this.videoElement = document.getElementById("vid");
     const mediaSourceSupported = !!window.MediaSource;
 
@@ -25,7 +28,7 @@ class VideoMediaPlayer {
 
     const mediaSource = new MediaSource();
     this.videoElement.src = URL.createObjectURL(mediaSource);
-
+    console.log(this.videoElement.src);
     mediaSource.addEventListener(
       "sourceopen",
       this.sourceOpenWrapper(mediaSource)
@@ -35,13 +38,20 @@ class VideoMediaPlayer {
   sourceOpenWrapper(mediaSource) {
     return async (_) => {
       this.sourceBuffer = mediaSource.addSourceBuffer(this.manifestJSON.codec);
-      const selected = (this.selected = this.manifestJSON.intro);
+      const selected = this.selected = this.manifestJSON.intro                                                                                                                                                                                                                                                                                                                                                                                                                                     ;
 
       // evita rodar como "LIVE"
-
+      console.log(selected);
       mediaSource.duration = this.videoDuration;
       await this.fileDownload(selected.url);
+      setInterval(this.waitForQuestions.bind(this), 200);
     };
+  }
+
+  waitForQuestions() {
+    const currentTime = parseInt(this.videoElement.currentTime);
+    console.log('currentTime', currentTime);
+    this.videoComponent.configureModal(this.selected.options);
   }
 
   async fileDownload(url) {
@@ -68,12 +78,12 @@ class VideoMediaPlayer {
     sourceBuffer.appendBuffer(allSegments);
 
     return new Promise((resolve, reject) => {
-        const updateend = (_) => {
-            sourceBuffer.removeEventListener("updateend", updateend);
-            sourceBuffer.timestampOffset = this.videoDuration;
+      const updateend = (_) => {
+        sourceBuffer.removeEventListener("updateend", updateend);
+        sourceBuffer.timestampOffset = this.videoDuration;
 
-            return resolve();
-        }
+        return resolve();
+      };
       sourceBuffer.addEventListener("updateend", updateend);
       sourceBuffer.addEventListener("error", reject);
     });
